@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="tl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TALO ANG PAPEL SA BATO | Digital Protest & Memorial</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts for High Impact Protest Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400;1,700&family=Oswald:wght@500;700&family=Special+Elite&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Courier Prime', 'monospace'],
+                        impact: ['Oswald', 'sans-serif'],
+                        typewriter: ['Special Elite', 'serif'],
+                    },
+                    colors: {
+                        crimson: {
+                            900: '#2a0505',
+                            800: '#4c0c0c',
+                            750: '#690d0d',
+                            700: '#900d0d',
+                            600: '#b91c1c',
+                            500: '#ef4444',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Haunting CRT Scanline Effect */
+        .crt-overlay {
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 4px, 6px 100%;
+            pointer-events: none;
+        }
+
+        /* Glitch Animation Keyframes */
+        @keyframes glitch {
+            0% {
+                transform: translate(0);
+                text-shadow: -2px 2px #ef4444, 2px -2px #06b6d4;
+            }
+            20% {
+                transform: translate(-3px, 3px);
+                text-shadow: 3px -3px #ef4444, -3px 3px #06b6d4;
+            }
+            40% {
+                transform: translate(-3px, -3px);
+                text-shadow: -3px -3px #ef4444, 3px 3px #06b6d4;
+            }
+            60% {
+                transform: translate(3px, 3px);
+                text-shadow: 3px 3px #ef4444, -3px -3px #06b6d4;
+            }
+            80% {
+                transform: translate(3px, -3px);
+                text-shadow: -3px 3px #ef4444, 3px -3px #06b6d4;
+            }
+            100% {
+                transform: translate(0);
+                text-shadow: -2px 2px #ef4444, 2px -2px #06b6d4;
+            }
+        }
+
+        .glitch-text {
+            animation: glitch 1.5s infinite steps(2);
+        }
+
+        @keyframes flicker {
+            0%, 18%, 22%, 25%, 53%, 57%, 100% {
+                opacity: 1;
+            }
+            20%, 24%, 55% {
+                opacity: 0.3;
+            }
+        }
+
+        .flicker-text {
+            animation: flicker 4s infinite;
+        }
+
+        /* Redacted Text Styling - reveals upon click */
+        .redacted {
+            background-color: #000;
+            color: #000;
+            cursor: pointer;
+            transition: all 0.4s ease;
+            user-select: none;
+            border-bottom: 2px dashed #900d0d;
+        }
+        
+        .redacted.revealed {
+            background-color: transparent;
+            color: #ef4444;
+            user-select: text;
+            border-bottom: none;
+        }
+
+        /* Red Warning stamp overlay style */
+        .red-stamp {
+            border: 5px double #ef4444;
+            color: #ef4444;
+            font-family: 'Special Elite', serif;
+            transform: rotate(-12deg);
+            box-shadow: 0 0 10px rgba(239, 68, 68, 0.2);
+            text-shadow: 0 0 2px rgba(239, 68, 68, 0.8);
+            letter-spacing: 4px;
+        }
+
+        /* Marquee horizontal loops */
+        @keyframes marquee {
+            0% { transform: translateX(0%); }
+            100% { transform: translateX(-50%); }
+        }
+
+        .marquee-inner {
+            display: flex;
+            width: max-content;
+            animation: marquee 25s linear infinite;
+        }
+
+        /* Background Vignette */
+        .vignette-shadow {
+            box-shadow: inset 0 0 150px rgba(0, 0, 0, 0.95);
+        }
+
+        /* Smooth reveal animation */
+        .fade-in-section {
+            opacity: 0;
+            transform: translateY(40px);
+            transition: opacity 1s ease-out, transform 1s ease-out;
+        }
+
+        .fade-in-section.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+    <!-- YouTube Iframe API for clean background music control -->
+    <script src="https://www.youtube.com/iframe_api"></script>
+</head>
+<body class="bg-black text-stone-200 font-sans min-h-screen relative overflow-x-hidden selection:bg-red-900 selection:text-red-100">
+
+    <!-- Haunting Overlay Layout elements -->
+    <div class="fixed inset-0 crt-overlay z-50 pointer-events-none"></div>
+    <div class="fixed inset-0 vignette-shadow z-40 pointer-events-none"></div>
+    
+    <!-- Hidden Youtube Player (controlled procedurally via API) -->
+    <div id="ytBgMusicContainer" class="hidden absolute w-1 h-1 opacity-0 pointer-events-none"></div>
+
+    <!-- Background Particle Canvas (floating ash and smoke) -->
+    <canvas id="ashCanvas" class="fixed inset-0 z-0 pointer-events-none opacity-40"></canvas>
+
+    <!-- Introductory Loader Cinematic Screen -->
+    <div id="introLoader" class="fixed inset-0 bg-black z-[100] flex flex-col items-center justify-center p-6 text-center transition-opacity duration-1000">
+        <div class="max-w-md space-y-6">
+            <div class="text-red-600 animate-pulse text-5xl mb-2">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <p class="font-mono text-xs tracking-widest text-stone-500 uppercase">System Initializing / Dossier File: B-D-R</p>
+            <div class="h-1.5 w-full bg-stone-900 rounded-full overflow-hidden border border-stone-800">
+                <div id="loadProgress" class="h-full bg-red-600 transition-all duration-300" style="width: 0%"></div>
+            </div>
+            <div class="text-stone-400 font-mono text-[11px] h-8" id="loaderLog">Kinakarga ang mga classified na dokumento...</div>
+            <button onclick="startActivisticExperience()" id="enterBtn" class="hidden bg-red-700 hover:bg-red-600 text-white font-bold tracking-widest uppercase px-8 py-3.5 border border-red-500 rounded shadow-lg shadow-red-900/40 transition-all transform hover:scale-105">
+                Pumasok sa Dossier
+            </button>
+        </div>
+    </div>
+
+    <!-- Fixed Media Controls Widget (Top Right) -->
+    <div class="fixed top-4 right-4 z-[90] flex items-center space-x-3 bg-black/80 backdrop-blur-md px-4 py-2 border border-red-900/40 rounded-full">
+        <button id="audioToggleBtn" onclick="toggleAudio()" class="text-stone-400 hover:text-red-500 transition-all flex items-center space-x-2 text-xs uppercase font-mono" title="Mute/Unmute Audio">
+            <i id="audioIcon" class="fa-solid fa-volume-xmark text-stone-500"></i>
+            <span id="audioStatus">Musika: Sarado</span>
+        </button>
+        <span class="text-red-700">|</span>
+        <a href="#dossierSection" class="text-[10px] tracking-widest text-red-500 uppercase font-mono hover:underline">Mga Kaso</a>
+    </div>
+
+    <!-- HERO / PROTEST COVER SECTION -->
+    <section class="min-h-screen relative flex flex-col justify-center items-center px-4 py-20 z-10 text-center overflow-hidden">
+        
+        <!-- Emergency Flashing Alarm Light Background (Subtle) -->
+        <div class="absolute inset-0 bg-red-950/5 mix-blend-color-burn animate-pulse pointer-events-none"></div>
+
+        <!-- Huge Distressed Glitch Slogan Title -->
+        <div class="max-w-6xl mx-auto space-y-6 relative">
+            <p class="text-red-500 tracking-widest text-xs sm:text-sm font-mono uppercase bg-red-950/40 border border-red-900/30 py-1.5 px-4 rounded-full inline-block animate-pulse">
+                Selyado: Walang Lihim na Hindi Mabubunyag
+            </p>
+            
+            <h1 class="font-impact text-6xl sm:text-8xl md:text-9xl font-black uppercase text-white tracking-tighter leading-none select-none glitch-text">
+                TALO ANG PAPEL<br><span class="text-red-600">SA BATO</span>
+            </h1>
+
+            <p class="font-typewriter text-red-500 font-bold text-lg sm:text-2xl tracking-widest max-w-2xl mx-auto uppercase">
+                ICC WARRANT OF ARREST INQUIRY
+            </p>
+            
+            <p class="font-mono text-xs sm:text-sm text-stone-400 tracking-wider max-w-xl mx-auto leading-relaxed">
+                Justice cannot be silenced. History remembers the collateral damage. Demanding full accountability of the War on Drugs command chain.
+            </p>
+
+            <div class="pt-8 flex flex-wrap justify-center gap-4">
+                <a href="#dossierSection" class="bg-red-800 hover:bg-red-700 text-white font-bold tracking-widest uppercase text-xs px-6 py-4 rounded border border-red-500/50 shadow-md transition-all">
+                    Suriin ang Dossier
+                </a>
+                <a href="#memorialSection" class="bg-stone-900 hover:bg-stone-800 text-stone-300 font-bold tracking-widest uppercase text-xs px-6 py-4 rounded border border-stone-800 transition-all">
+                    Alalahanin ang mga Biktima
+                </a>
+            </div>
+        </div>
+
+        <!-- Centerpiece Dossier Portrait of Bato dela Rosa with glitch layers -->
+        <div class="relative mt-16 max-w-sm w-full group cursor-crosshair px-4">
+            <div class="absolute -inset-1 bg-gradient-to-r from-red-600 to-red-900 rounded opacity-75 blur-md group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-tilt"></div>
+            <div class="relative bg-stone-950 border-4 border-red-900 p-2 rounded shadow-2xl flex flex-col items-center">
+                <!-- Glitching Image Frame -->
+                <div class="relative w-full aspect-[4/3] overflow-hidden bg-black border border-red-800/50">
+                    <img id="batoPortrait" src="d5930a5e-a666-4a24-a499-21e1a1fc6875.jpg" alt="Bato Dela Rosa Portrait" class="w-full h-full object-cover grayscale contrast-125 brightness-90 hover:grayscale-0 transition-all duration-700">
+                    <!-- Red Warning Stamp -->
+                    <div class="absolute top-4 left-4 z-20 red-stamp px-3 py-1 font-bold text-xs uppercase animate-pulse">
+                        SANGKOT
+                    </div>
+                </div>
+                <!-- Dossier Identifier footer -->
+                <div class="w-full mt-3 text-left font-mono text-[10px] space-y-1 text-stone-400 border-t border-red-900/30 pt-2.5">
+                    <p class="text-red-500 font-bold tracking-wider">PAKSA: SEN. RONALD "BATO" DELA ROSA</p>
+                    <p>MGA KASO: Crimes Against Humanity • Oplan Double Barrel Command</p>
+                    <p>ESTADO: Isinasailalim sa Imbestigasyon ng ICC</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scroll down arrow hint -->
+        <div class="absolute bottom-6 left-1/2 transform -translate-x-1/2 text-stone-500 animate-bounce text-sm">
+            <span class="block text-[10px] uppercase font-mono tracking-widest mb-1 text-red-500">Magsaliksik Pababa</span>
+            <i class="fa-solid fa-angle-down text-lg"></i>
+        </div>
+    </section>
+
+    <!-- SLOGAN CONTINUOUS MARQUEE BAND -->
+    <div class="bg-red-700 border-y-2 border-red-500 py-3 text-black font-impact text-lg sm:text-2xl tracking-widest uppercase overflow-hidden z-20 relative select-none">
+        <div class="marquee-inner">
+            <span class="mx-6 text-black font-black">NO ONE IS ABOVE THE LAW</span>
+            <span class="mx-6 text-white text-shadow-md">|</span>
+            <span class="mx-6 text-black font-black">JUSTICE FOR THE VICTIMS</span>
+            <span class="mx-6 text-white text-shadow-md">|</span>
+            <span class="mx-6 text-black font-black">SILENCE PROTECTS POWER</span>
+            <span class="mx-6 text-white text-shadow-md">|</span>
+            <span class="mx-6 text-black font-black">HISTORY REMEMBERS THE TRUTH</span>
+            <span class="mx-6 text-white text-shadow-md">|</span>
+            <span class="mx-6 text-black font-black">NO ONE IS ABOVE THE LAW</span>
+            <span class="mx-6 text-white text-shadow-md">|</span>
+            <span class="mx-6 text-black font-black">JUSTICE FOR THE VICTIMS</span>
+            <span class="mx-6 text-white text-shadow-md">|</span>
+            <span class="mx-6 text-black font-black">SILENCE PROTECTS POWER</span>
+            <span class="mx-6 text-white text-shadow-md">|</span>
+            <span class="mx-6 text-black font-black">HISTORY REMEMBERS THE TRUTH</span>
+        </div>
+    </div>
+
+    <!-- DOSSIER & INVESTIGATION FILES SECTION -->
+    <section id="dossierSection" class="py-24 px-4 max-w-6xl mx-auto z-10 relative space-y-16">
+        
+        <div class="text-center space-y-4 fade-in-section">
+            <h2 class="font-impact text-4xl sm:text-6xl text-white uppercase tracking-wider">classification: criminal dossier</h2>
+            <p class="font-mono text-xs text-red-500 uppercase tracking-widest">I-click ang mga itim na selyo upang buksan ang mga tinagong (redacted) impormasyon.</p>
+            <div class="h-1 w-24 bg-red-600 mx-auto"></div>
+        </div>
+
+        <!-- 3 Pillars of Controversies / Leaked Folders Layout -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            
+            <!-- Dossier 1: War on Drugs -->
+            <div class="bg-stone-950 border border-red-900/60 rounded-xl p-6 shadow-xl relative overflow-hidden flex flex-col justify-between hover:border-red-600 transition duration-500 fade-in-section">
+                <!-- Red Stamp Background -->
+                <div class="absolute -right-10 -bottom-10 opacity-5 text-9xl font-black">☠️</div>
+                
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between border-b border-red-900/30 pb-3">
+                        <span class="font-mono text-xs text-red-500">DOKUMENTO BLG. 01</span>
+                        <span class="text-xs bg-red-950 text-red-400 px-2 py-0.5 rounded border border-red-900/50">DRUG WAR</span>
+                    </div>
+                    
+                    <h3 class="font-impact text-2xl text-white uppercase tracking-wider">Ang Madugong Kampanya</h3>
+                    
+                    <p class="font-mono text-xs text-stone-400 leading-relaxed">
+                        Sa ilalim ng Oplan Double Barrel, libo-limong pamilya ang naiwang naghahanap ng katarungan. Ang mga operasyong pinamunuan ni Dela Rosa bilang PNP Chief ay nagresulta sa hindi mabilang na <span class="redacted" onclick="revealRedacted(this)">lehitimong pinatay raw ngunit pinaghihinalaang extrajudicial killings</span>.
+                    </p>
+                    <p class="font-mono text-xs text-stone-400 leading-relaxed">
+                        Karamihan sa mga biktima ay mula sa maralitang sektor ng bansa. Ang salitang "nanlaban" ay naging selyo ng kamatayan upang <span class="redacted" onclick="revealRedacted(this)">takpan ang mga iregular na pamamaraan ng kapulisan</span>.
+                    </p>
+                </div>
+
+                <div class="mt-6 pt-4 border-t border-red-900/20 text-center">
+                    <span class="red-stamp text-xs px-2 py-1 inline-block">UNDER INVESTIGATION</span>
+                </div>
+            </div>
+
+            <!-- Dossier 2: ICC Inquiry -->
+            <div class="bg-stone-950 border border-red-900/60 rounded-xl p-6 shadow-xl relative overflow-hidden flex flex-col justify-between hover:border-red-600 transition duration-500 fade-in-section">
+                <div class="absolute -right-10 -bottom-10 opacity-5 text-9xl font-black">⚖️</div>
+                
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between border-b border-red-900/30 pb-3">
+                        <span class="font-mono text-xs text-red-500">DOKUMENTO BLG. 02</span>
+                        <span class="text-xs bg-red-950 text-red-400 px-2 py-0.5 rounded border border-red-900/50">ICC PROBE</span>
+                    </div>
+                    
+                    <h3 class="font-impact text-2xl text-white uppercase tracking-wider">Imbestigasyon ng ICC</h3>
+                    
+                    <p class="font-mono text-xs text-stone-400 leading-relaxed">
+                        Ang International Criminal Court (ICC) ay nag-imbestiga sa kasong <span class="redacted" onclick="revealRedacted(this)">Crimes Against Humanity</span> laban kay Dela Rosa at dating Pangulong Duterte ukol sa serye ng sistematikong patayan.
+                    </p>
+                    <p class="font-mono text-xs text-stone-400 leading-relaxed">
+                        Kahit pilit na tinatalikuran ng administrasyon ang obligation sa ICC, patuloy ang panawagan ng mga pamilya ng mga biktima na <span class="redacted" onclick="revealRedacted(this)">harapin ang hustisya sa pandaigdigang hukuman</span>.
+                    </p>
+                </div>
+
+                <div class="mt-6 pt-4 border-t border-red-900/20 text-center">
+                    <span class="red-stamp text-xs px-2 py-1 inline-block">ACCOUNTABILITY</span>
+                </div>
+            </div>
+
+            <!-- Dossier 3: Chain of Command -->
+            <div class="bg-stone-950 border border-red-900/60 rounded-xl p-6 shadow-xl relative overflow-hidden flex flex-col justify-between hover:border-red-600 transition duration-500 fade-in-section">
+                <div class="absolute -right-10 -bottom-10 opacity-5 text-9xl font-black">🎖️</div>
+                
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between border-b border-red-900/30 pb-3">
+                        <span class="font-mono text-xs text-red-500">DOKUMENTO BLG. 03</span>
+                        <span class="text-xs bg-red-950 text-red-400 px-2 py-0.5 rounded border border-red-900/50">COMMAND</span>
+                    </div>
+                    
+                    <h3 class="font-impact text-2xl text-white uppercase tracking-wider">Command Responsibility</h3>
+                    
+                    <p class="font-mono text-xs text-stone-400 leading-relaxed">
+                        Bilang dating hepe ng Pambansang Pulisya (PNP), si Dela Rosa ang nagpatupad ng polisiya ng dahas. Sa ilalim ng prinsipyo ng Command Responsibility, may pananagutan siya sa <span class="redacted" onclick="revealRedacted(this)">paggawad ng mga pabuya sa mga pulis na nakakapatay</span>.
+                    </p>
+                    <p class="font-mono text-xs text-stone-400 leading-relaxed">
+                        Ang kanyang mga naging pahayag na nagtatanggol sa karahasan ay nagsilbing <span class="redacted" onclick="revealRedacted(this)">maliwanag na bendisyon sa mapang-abusong kapangyarihan</span>.
+                    </p>
+                </div>
+
+                <div class="mt-6 pt-4 border-t border-red-900/20 text-center">
+                    <span class="red-stamp text-xs px-2 py-1 inline-block">NEVER FORGET</span>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Call-out Quote Block -->
+        <div class="bg-red-950/20 border border-red-800/40 p-8 rounded-xl max-w-4xl mx-auto text-center space-y-4 fade-in-section">
+            <p class="font-typewriter text-red-400 text-lg sm:text-xl leading-relaxed italic">
+                "Kahit anong laro ang gawin ninyo sa batas, ang kasaysayan ay walang pinapanigang pader. Ang dugong dumanak ay hindi mabubura ng kapangyarihan."
+            </p>
+            <p class="font-mono text-xs text-stone-500 tracking-widest uppercase">- Sigaw ng Hustisya</p>
+        </div>
+
+    </section>
+
+    <!-- THE MEMORIAL & TRIBUTE TO THE VICTIMS SECTION -->
+    <section id="memorialSection" class="bg-gradient-to-b from-black via-stone-950 to-black py-24 border-y border-red-950/50 relative overflow-hidden">
+        
+        <!-- Background Candles Graphic or Particle effect overlay -->
+        <div class="absolute inset-0 z-0 opacity-10 flex justify-around items-end pointer-events-none">
+            <div class="w-12 h-32 bg-orange-600 rounded-t-full filter blur-xl animate-pulse"></div>
+            <div class="w-8 h-24 bg-red-600 rounded-t-full filter blur-xl animate-pulse delay-75"></div>
+            <div class="w-16 h-40 bg-orange-500 rounded-t-full filter blur-xl animate-pulse delay-150"></div>
+        </div>
+
+        <div class="max-w-4xl mx-auto px-4 text-center space-y-12 relative z-10">
+            
+            <div class="space-y-4 fade-in-section">
+                <span class="text-red-500 text-3xl"><i class="fa-solid fa-fire-burner animate-bounce"></i></span>
+                <h2 class="font-impact text-4xl sm:text-6xl text-white uppercase tracking-wider">Alay sa mga Biktima</h2>
+                <p class="font-mono text-xs text-stone-400 max-w-md mx-auto leading-relaxed">
+                    Hindi sila mga estatistika lamang. Sila ay may pamilya, mga pangarap, at karapatang mabuhay. Alalahanin ang mga pumanaw sa kamay ng karahasan.
+                </p>
+                <div class="h-1 w-20 bg-red-600 mx-auto mt-2"></div>
+            </div>
+
+            <!-- Interactive Memorial Scroller -->
+            <div class="bg-black/80 backdrop-blur border border-red-900/30 rounded-2xl p-8 max-w-2xl mx-auto space-y-6 shadow-inner fade-in-section">
+                <div class="border-b border-red-900/20 pb-4">
+                    <p class="font-mono text-xs tracking-widest text-red-500 uppercase">ILAN SA MGA KILALANG BIKTIMA NG DRUG WAR</p>
+                </div>
+
+                <div class="h-64 overflow-y-auto space-y-4 pr-2 text-left font-typewriter scroll-smooth">
+                    <!-- Victim 1 -->
+                    <div class="border-l-2 border-red-600 pl-4 py-2 hover:bg-stone-950 transition">
+                        <p class="text-white font-bold">Kian Loyd Delos Santos (17 Anyos)</p>
+                        <p class="text-[11px] text-stone-400 mt-1 italic">
+                            Binatilyong binaril sa Caloocan habang nagmamakaawa: "Tama na po, may pagsusulit pa ako bukas."
+                        </p>
+                    </div>
+                    <!-- Victim 2 -->
+                    <div class="border-l-2 border-red-600 pl-4 py-2 hover:bg-stone-950 transition">
+                        <p class="text-white font-bold">Carl Arnaiz (19 Anyos)</p>
+                        <p class="text-[11px] text-stone-400 mt-1 italic">
+                            Dating mag-aaral ng UP Diliman na binaril ng pulisya pagkatapos sabihing "nanlaban" daw sa pangho-holdap.
+                        </p>
+                    </div>
+                    <!-- Victim 3 -->
+                    <div class="border-l-2 border-red-600 pl-4 py-2 hover:bg-stone-950 transition">
+                        <p class="text-white font-bold">Reynaldo "Kulot" De Guzman (14 Anyos)</p>
+                        <p class="text-[11px] text-stone-400 mt-1 italic">
+                            Natagpuang may 30 saksak sa katawan at nakabalot ng tape ang ulo sa isang sapa sa Nueva Ecija.
+                        </p>
+                    </div>
+                    <!-- Victim 4 -->
+                    <div class="border-l-2 border-red-600 pl-4 py-2 hover:bg-stone-950 transition">
+                        <p class="text-white font-bold">Danica May Garcia (5 Anyos)</p>
+                        <p class="text-[11px] text-stone-400 mt-1 italic">
+                            Biktima ng ligaw na bala sa Dagupan habang ang target ng operasyon ay ang kanyang lolo.
+                        </p>
+                    </div>
+                    <!-- Victim 5 -->
+                    <div class="border-l-2 border-red-600 pl-4 py-2 hover:bg-stone-950 transition">
+                        <p class="text-white font-bold">Myca Ulpina (3 Anyos)</p>
+                        <p class="text-[11px] text-stone-400 mt-1 italic">
+                            Napatay sa isang buy-bust operation sa Rodriguez, Rizal. Tinawag siyang "collateral damage" ng mga opisyales.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="pt-4 border-t border-red-900/20 text-stone-500 font-mono text-[10px] flex justify-between">
+                    <span>Scroll upang makita ang iba</span>
+                    <span>Hustisya ang Sigaw</span>
+                </div>
+            </div>
+
+            <!-- Demand Accountability Campaign Action -->
+            <div class="space-y-6 fade-in-section pt-6">
+                <h3 class="font-impact text-xl sm:text-2xl text-red-500 uppercase tracking-widest">SAMA-SAMANG PAGHILING NG HUSTISYA</h3>
+                <div class="flex flex-col sm:flex-row justify-center items-center gap-4 max-w-lg mx-auto">
+                    <input type="email" id="protestEmail" placeholder="Iyong Email para sa Petisyon..." class="w-full bg-stone-950 text-stone-200 border border-red-900/50 px-4 py-3 rounded focus:outline-none focus:ring-1 focus:ring-red-500 font-mono text-xs">
+                    <button onclick="signPetition()" class="w-full sm:w-auto whitespace-nowrap bg-red-700 hover:bg-red-600 text-white font-bold tracking-widest uppercase text-xs px-6 py-3.5 rounded transition transform hover:scale-105 shadow-md shadow-red-900/20">
+                        Sumama sa Petisyon
+                    </button>
+                </div>
+                <!-- Petition count simulation -->
+                <p class="text-[10px] text-stone-500 font-mono">May <span id="petitionCount" class="text-red-500 font-bold">28,491</span> na ang pumirma para hilingin ang paggawad ng imbestigasyon ng ICC sa Pilipinas.</p>
+            </div>
+
+        </div>
+
+    </section>
+
+    <!-- FOOTER WITH CAMPAIGN DISCLAIMERS -->
+    <footer class="bg-black text-stone-500 text-[11px] font-mono py-12 border-t border-red-900/30 z-10 relative">
+        <div class="max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+            
+            <div class="space-y-3 text-center md:text-left">
+                <h4 class="font-impact text-white uppercase text-sm tracking-wider">HUSTISYA AT PAGKAKAISA OLYMPIC MOVEMENT</h4>
+                <p class="leading-relaxed text-stone-500">
+                    Ang portal na ito ay gawa ng mga malayang mamamayan, tagapagtanggol ng karapatang pantao, at mga pamilya ng mga biktima ng karahasan na nagkakaisa upang labanan ang kawalang-katarungan sa bansa.
+                </p>
+                <p class="text-red-950 font-black text-xs">
+                    "Talo ang papel sa bato kapag nanahimik ang sambayanan."
+                </p>
+            </div>
+
+            <div class="space-y-4 text-center md:text-right">
+                <div class="flex justify-center md:justify-end space-x-4 text-base">
+                    <a href="https://www.icc-cpi.int" target="_blank" class="text-stone-500 hover:text-red-500 transition-all"><i class="fa-solid fa-scale-balanced"></i></a>
+                    <a href="#" onclick="triggerEmergencyFlash()" class="text-stone-500 hover:text-red-500 transition-all" title="Trigger Alert Flash"><i class="fa-solid fa-bullhorn"></i></a>
+                </div>
+                <p>&copy; 2026 Kilusang Karapatang Pantao. Lahat ng karapatan ay nakalaan.</p>
+                <p class="text-[9px] text-stone-600">Disenyo para sa cyber-activism at digital protest art installation. Optimized for all devices.</p>
+            </div>
+
+        </div>
+    </footer>
+
+    <!-- INTERACTIVE CYBER-ACTIVISM SCRIPTS -->
+    <script>
+        // Global variables
+        let ytPlayer = null;
+        let isPlaying = false;
+
+        // Floating Ash Particle System on HTML5 Canvas
+        const canvas = document.getElementById("ashCanvas");
+        const ctx = canvas.getContext("2d");
+        
+        let particles = [];
+        const maxParticles = 40;
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        class AshParticle {
+            constructor() {
+                this.reset();
+            }
+
+            reset() {
+                this.x = Math.random() * canvas.width;
+                this.y = canvas.height + 10;
+                this.size = Math.random() * 3 + 1;
+                this.speedY = -(Math.random() * 1.5 + 0.5);
+                this.speedX = Math.random() * 1 - 0.5;
+                this.opacity = Math.random() * 0.5 + 0.2;
+                this.color = Math.random() > 0.5 ? '#900d0d' : '#444444'; // blend ash and ember
+            }
+
+            update() {
+                this.y += this.speedY;
+                this.x += this.speedX;
+                this.opacity -= 0.002;
+                if (this.y < 0 || this.opacity <= 0) {
+                    this.reset();
+                }
+            }
+
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = this.opacity;
+                ctx.fillStyle = this.color;
+                ctx.shadowBlur = Math.random() > 0.8 ? 5 : 0;
+                ctx.shadowColor = '#ef4444';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        function initParticles() {
+            for (let i = 0; i < maxParticles; i++) {
+                particles.push(new AshParticle());
+            }
+        }
+
+        function animateParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+            requestAnimationFrame(animateParticles);
+        }
+
+        initParticles();
+        animateParticles();
+
+        // INTRO CINEMATIC LOADING CONTROLLER
+        const loadingSteps = [
+            "Initializing secure connection to activist nodes...",
+            "Loading classified dossier data: Ron-Dela-Rosa-01...",
+            "Decrypting transcripts of Oplan Double Barrel commands...",
+            "Compiling ICC documentation: Crime Category: Crimes Against Humanity...",
+            "Resolving victim records and family statements...",
+            "Complete. Ready to project protest art installation."
+        ];
+        
+        let currentLoadStep = 0;
+        const progressBar = document.getElementById("loadProgress");
+        const loaderLog = document.getElementById("loaderLog");
+        const enterBtn = document.getElementById("enterBtn");
+
+        function simulateLoading() {
+            if (currentLoadStep < loadingSteps.length) {
+                loaderLog.innerText = loadingSteps[currentLoadStep];
+                let progress = ((currentLoadStep + 1) / loadingSteps.length) * 100;
+                progressBar.style.width = `${progress}%`;
+                currentLoadStep++;
+                setTimeout(simulateLoading, 600 + Math.random() * 400);
+            } else {
+                loaderLog.innerText = "System loaded safely.";
+                enterBtn.classList.remove("hidden");
+            }
+        }
+
+        // Trigger simulation initialization immediately on script load
+        setTimeout(simulateLoading, 500);
+
+        function startActivisticExperience() {
+            const intro = document.getElementById("introLoader");
+            intro.classList.add("opacity-0");
+            setTimeout(() => {
+                intro.style.display = "none";
+                // Autostart music trigger attempt
+                toggleAudio();
+            }, 1000);
+        }
+
+        // BACKGROUND PROTEST MUSIC PLAYER CONTROLLER (YOUTUBE MODEST PLAYER)
+        function onYouTubeIframeAPIReady() {
+            ytPlayer = new YT.Player('ytBgMusicContainer', {
+                height: '1',
+                width: '1',
+                videoId: '_jYRicNYT6c', // Activist/Emotional Instrumental Protest Backing track
+                playerVars: {
+                    'autoplay': 0,
+                    'controls': 0,
+                    'disablekb': 1,
+                    'fs': 0,
+                    'rel': 0,
+                    'modestbranding': 1,
+                    'loop': 1,
+                    'playlist': '_jYRicNYT6c'
+                },
+                events: {
+                    'onReady': onPlayerReady
+                }
+            });
+        }
+
+        function onPlayerReady(event) {
+            // Safe, comfortable backround audio volume level
+            event.target.setVolume(25);
+        }
+
+        function toggleAudio() {
+            const statusText = document.getElementById("audioStatus");
+            const icon = document.getElementById("audioIcon");
+
+            if (!isPlaying) {
+                isPlaying = true;
+                icon.className = "fa-solid fa-volume-high text-red-500 animate-pulse";
+                statusText.innerText = "Musika: Bukas";
+
+                if (ytPlayer && typeof ytPlayer.playVideo === 'function') {
+                    try {
+                        ytPlayer.playVideo();
+                    } catch (e) {
+                        console.warn("Autoplay blocked or failure loading YT streaming engine.");
+                    }
+                }
+            } else {
+                isPlaying = false;
+                icon.className = "fa-solid fa-volume-xmark text-stone-500";
+                statusText.innerText = "Musika: Sarado";
+
+                if (ytPlayer && typeof ytPlayer.pauseVideo === 'function') {
+                    try {
+                        ytPlayer.pauseVideo();
+                    } catch (e) {}
+                }
+            }
+        }
+
+        // REDACTED DYNAMIC CHANGER
+        function revealRedacted(element) {
+            if (!element.classList.contains("revealed")) {
+                element.classList.add("revealed");
+                // play tiny mechanical tick sound
+                playTickSound();
+            }
+        }
+
+        function playTickSound() {
+            try {
+                const tempCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = tempCtx.createOscillator();
+                const gain = tempCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(1200, tempCtx.currentTime);
+                gain.gain.setValueAtTime(0.05, tempCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, tempCtx.currentTime + 0.1);
+                osc.connect(gain);
+                gain.connect(tempCtx.destination);
+                osc.start();
+                osc.stop(tempCtx.currentTime + 0.1);
+            } catch (e) {}
+        }
+
+        // EMERGENCY ALARM FLASH EVENT
+        function triggerEmergencyFlash() {
+            const body = document.body;
+            let flashes = 0;
+            const interval = setInterval(() => {
+                if (flashes < 6) {
+                    body.style.backgroundColor = flashes % 2 === 0 ? '#3f0c0c' : '#000000';
+                    flashes++;
+                } else {
+                    body.style.backgroundColor = '#000000';
+                    clearInterval(interval);
+                }
+            }, 100);
+            playTickSound();
+        }
+
+        // SIGN PETITION EVENT
+        function signPetition() {
+            const emailInput = document.getElementById("protestEmail");
+            const countSpan = document.getElementById("petitionCount");
+            
+            if (!emailInput.value.trim() || !emailInput.value.includes("@")) {
+                alert("Mangyaring maglagay ng tamang email upang mapatunayan ang iyong pirma sa petisyon.");
+                return;
+            }
+
+            let currentCount = parseInt(countSpan.innerText.replace(/,/g, ''));
+            currentCount++;
+            countSpan.innerText = currentCount.toLocaleString();
+            
+            emailInput.value = "";
+            alert("Salamat! Ang iyong pirma ay matagumpay na naitala sa ating pandaigdigang petisyon para sa hustisya.");
+            triggerEmergencyFlash();
+        }
+
+        // SCROLL REVEAL (FADE-IN ANIMATION MANAGER)
+        const observerOptions = {
+            root: null,
+            rootMargin: '0px',
+            threshold: 0.15
+        };
+
+        const observer = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                    // once animated, stop observing
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.fade-in-section').forEach(section => {
+            observer.observe(section);
+        });
+    </script>
+</body>
+</html>
